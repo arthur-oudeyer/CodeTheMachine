@@ -1,7 +1,8 @@
+import time
+
 import CodeTheMachine_ao.vars as vr
 import CodeTheMachine_ao.config as cf
 import CodeTheMachine_ao.vector as v
-from CodeTheMachine_ao.collectable import Collectable
 from CodeTheMachine_ao.vector import Vector
 
 import CodeTheMachine_ao.collider as collide
@@ -46,6 +47,22 @@ def getGroundHeight() -> float:
         return CarLvlManager.getGroundHeight()
     else:
         return NoneLvlManager.getGroundHeight()
+
+def reset_lvl():
+    global segment_index, segment_t
+    segment_index, segment_t = -1, 0
+
+    vr.score = 0
+    vr.level_succeeded, vr.time_succeeded = False, -1
+
+    for collectable in vr.collectables:
+        collectable.reset()
+
+    vr.machine.position = DroneLvlManager.getMachineStartPos()
+
+    print("Lvl reset.")
+    time.sleep(0.1)
+    return True
 # --------------------------------------------------- #
 
 # -------------------------------- Trajectory ------------------------------------#
@@ -54,6 +71,7 @@ def computePointObjectiveOnPath(trajectory, segment_duration) -> v.Vector:
     if segment_index < 0:
         segment_index = 0 # init
         segment_t = vr.t
+        point = trajectory[segment_index]
 
     p1, p2 = trajectory[segment_index], trajectory[(segment_index + 1) % len(trajectory)]
     if v.distance(p1, p2) < v.distance(p1, point): # p2 reached
@@ -152,6 +170,28 @@ class DroneLvlManager(AbstractLvlManager):
             vr.collectables.append(collect.Orb(v.Vector(900, cf.window_y_size - DroneLvlManager.getGroundHeight() - 90), True))
 
             vr.collectables.append(collect.Energy(v.Vector(525, 250)))
+        elif level == 6:
+            vr.energy_loss = 0.25 * cf.base_energy_loss
+
+            vr.collectables.append(collect.Timer(v.Vector(200, 500), 30.0, full_reset=True))
+            vr.collectables.append(collect.Energy(v.Vector(400, 100)))
+
+            vr.collectables.append(collect.Orb(v.Vector(300, 500)))
+            vr.collectables.append(collect.Orb(v.Vector(600, 500)))
+            vr.collectables.append(collect.Orb(v.Vector(600, 300)))
+            vr.collectables.append(collect.Orb(v.Vector(100, 300)))
+            vr.collectables.append(collect.Orb(v.Vector(100, 100)))
+            vr.collectables.append(collect.Orb(v.Vector(600, 100)))
+            vr.collectables.append(collect.Orb(v.Vector(900, 100)))
+            vr.collectables.append(collect.Orb(v.Vector(900, 300)))
+            vr.collectables.append(collect.Orb(v.Vector(900, 500)))
+            vr.collectables.append(collect.Orb(v.Vector(750, 500)))
+
+            vr.colliders.append(collide.Wall(v.Vector(200, 800), v.Vector(200, 550), 6))
+            vr.colliders.append(collide.Wall(v.Vector(200, 400), v.Vector(200, 450), 6))
+            vr.colliders.append(collide.Wall(v.Vector(0, 400), v.Vector(500, 400), 10))
+            vr.colliders.append(collide.Wall(v.Vector(200, 200), v.Vector(750, 200), 10))
+            vr.colliders.append(collide.Wall(v.Vector(750, 400), v.Vector(750, 200), 10))
 
         elif level is None:
             pass
@@ -159,6 +199,7 @@ class DroneLvlManager(AbstractLvlManager):
             raise AttributeError(f"Error : level {level} does not exist.")
 
         vr.level = level
+        reset_lvl()
         print(f"Level {level} loaded.")
         return True
 
@@ -177,6 +218,8 @@ class DroneLvlManager(AbstractLvlManager):
             return DroneLvlManager.check_level_4()
         elif vr.level == 5:
             return DroneLvlManager.check_level_5()
+        elif vr.level == 6:
+            return DroneLvlManager.check_level_6()
         else:
             return DroneLvlManager.check_level_None()
 
@@ -221,10 +264,15 @@ class DroneLvlManager(AbstractLvlManager):
     def check_level_5() -> bool:
         return DroneLvlManager.isScoreReached(6)
 
+    @staticmethod
+    def check_level_6() -> bool:
+        return DroneLvlManager.isScoreReached(10)
+
     # ----- Point Target ----- #
     @staticmethod
     def getPointObjective() -> v.Vector:
         if vr.level == 4: return DroneLvlManager.PointObjectiveLvl4()
+        if vr.level == 6: return DroneLvlManager.PointObjectiveLvl6()
         else: return v.NullVector()
 
     @staticmethod
@@ -237,6 +285,26 @@ class DroneLvlManager(AbstractLvlManager):
                       Vector(cf.window_x_size / 2 + 200, cf.window_y_size - DroneLvlManager.getGroundHeight() - 300),
                       Vector(cf.window_x_size / 2 - 0, cf.window_y_size - DroneLvlManager.getGroundHeight() - 300)]
         return computePointObjectiveOnPath(trajectory, segment_duration)
+
+    @staticmethod
+    def PointObjectiveLvl6():
+        global segment_index, segment_t, point
+        segment_duration = [2, 4, 2, 4, 1, 4, 3, 4, 1]
+        trajectory = [Vector(cf.window_x_size / 2 - 400, cf.window_y_size - DroneLvlManager.getGroundHeight()),
+                      Vector(cf.window_x_size / 2 - 400, cf.window_y_size - DroneLvlManager.getGroundHeight() - 100),
+                      Vector(cf.window_x_size / 2 + 100, cf.window_y_size - DroneLvlManager.getGroundHeight() - 100),
+                      Vector(cf.window_x_size / 2 + 100, cf.window_y_size - DroneLvlManager.getGroundHeight() - 300),
+                      Vector(cf.window_x_size / 2 - 400, cf.window_y_size - DroneLvlManager.getGroundHeight() - 300),
+                      Vector(cf.window_x_size / 2 - 400, cf.window_y_size - DroneLvlManager.getGroundHeight() - 500),
+                      Vector(cf.window_x_size / 2 + 400, cf.window_y_size - DroneLvlManager.getGroundHeight() - 500),
+                      Vector(cf.window_x_size / 2 + 400, cf.window_y_size - DroneLvlManager.getGroundHeight() - 100),
+                      Vector(cf.window_x_size / 2 - 400, cf.window_y_size - DroneLvlManager.getGroundHeight() - 100)]
+        return computePointObjectiveOnPath(trajectory, segment_duration)
+
+    @staticmethod
+    def getMachineStartPos() -> Vector:
+        if vr.level == 6: return Vector(cf.window_x_size / 2 - 400, cf.window_y_size - DroneLvlManager.getGroundHeight())
+        else: return Vector(cf.window_x_size * 0.5, cf.window_y_size - DroneLvlManager.getGroundHeight())
 
     @staticmethod
     def getGroundHeight() -> float:
@@ -258,6 +326,7 @@ class CarLvlManager(AbstractLvlManager):
             vr.collectables.append(collect.Energy(Vector(450, 200), respawn_time=3))
             vr.collectables.append(collect.Orb(Vector(450, 300)))
         vr.level = level
+        reset_lvl()
         print(f"Level {level} loaded.")
         return True
 
@@ -277,5 +346,10 @@ class CarLvlManager(AbstractLvlManager):
         return computePointObjectiveOnPath(trajectory, segment_duration)
     @staticmethod
     def getGroundHeight() -> float: return 0.
+
+    @staticmethod
+    def getMachineStartPos() -> Vector:
+        return Vector(cf.window_x_size * 0.5, cf.window_y_size * 0.5)
+
 
 # --------------------------------------------------------------------------------#

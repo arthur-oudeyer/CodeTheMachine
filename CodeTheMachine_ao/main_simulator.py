@@ -101,9 +101,7 @@ def post_update():
     return
 
 def reset_sim():
-    vr.score = 0
-    vr.level_succeeded, vr.time_succeeded = False, -1
-    for collectable in vr.collectables:
-        collectable.reset()
     if vr.machine is not None:
         vr.machine.reset()
+    lvls.reset_lvl()
+
