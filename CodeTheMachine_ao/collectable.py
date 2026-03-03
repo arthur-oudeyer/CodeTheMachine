@@ -8,6 +8,8 @@ import CodeTheMachine_ao.vector as v
 import CodeTheMachine_ao.visuals as visuals
 from CodeTheMachine_ao.vector import Vector
 
+from CodeTheMachine_ao.main_simulator import reset_sim
+
 class Collectable:
     def __init__(self):
         self.id = u.getNewId()
@@ -63,7 +65,7 @@ class Orb(Collectable):
         self.visual = visuals.resize(visuals.orb, self.size)
 
 class Timer(Collectable):
-    def __init__(self, position, duration: float, reset_score=True):
+    def __init__(self, position, duration: float, reset_score=True, full_reset=False):
         super().__init__()
         self.type_name = "timer"
         self.size = Vector(*cf.collectables_base_size)
@@ -76,6 +78,7 @@ class Timer(Collectable):
         self.time_left = 0
 
         self.reset_score = reset_score
+        self.full_reset = full_reset
 
     def isFinished(self) -> bool:
         return self.time_left > 0
@@ -102,6 +105,7 @@ class Timer(Collectable):
                     for c in vr.collectables:
                         if isinstance(c, Orb):
                             c.setCollected(True)
+                if self.full_reset: reset_sim()
         else:
             self.time_left = 0
 
